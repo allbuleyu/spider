@@ -5,6 +5,9 @@ import (
 	"log"
 
 	"github.com/PuerkitoBio/goquery"
+
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func ExampleScrape() {
@@ -23,5 +26,16 @@ func ExampleScrape() {
 }
 
 func main() {
-	ExampleScrape()
+	// ExampleScrape()
+
+	db, err := sql.Open("mysql", "admin:Dream1tPossible@tcp(114.215.154.110:3306)/first-go")
+	rows, err := db.Query("select * from one_piece_pic where id > ?", 1)
+
+	s, err := rows.Columns()
+	for i := 0; i < 7; i++ {
+		rows.Scan(s)
+		rows.Next()
+
+	}
+	fmt.Println(rows, err)
 }
