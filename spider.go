@@ -26,12 +26,12 @@ func ExampleScrape() {
 }
 
 type OnePiecePic struct {
-	Id          string
-	Group_id    string
+	Id          int
+	Group_id    int
 	Name        string
 	Path        string
-	Create_time string
-	Is_delete   string
+	Create_time int
+	Is_delete   int
 }
 
 func main() {
