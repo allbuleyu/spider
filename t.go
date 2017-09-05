@@ -8,8 +8,6 @@ import (
 
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"reflect"
-	"strings"
 )
 
 func ExampleScrape() {
@@ -39,58 +37,7 @@ type OnePiecePic struct {
 type data map[string]interface{}
 
 func main() {
-	// ExampleScrape()
-	db, err := sql.Open("mysql", "admin:Dream1tPossible@tcp(114.215.154.110:3306)/first-go?charset=utf8")
-
-	defer db.Close()
-
-	rows, err := db.Query("select * from one_piece_pic where id > ?", 1)
-
-	// Get column names
-	columns, err := rows.Columns()
-	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
-	}
-
-	scanArgs := make([]interface{}, len(columns))
-
-	op := new(OnePiecePic)
-	ops := make([]OnePiecePic, 0)
-
-	t := reflect.TypeOf(op).Elem()
-	v := reflect.ValueOf(op).Elem()
-
-	if len(columns) < t.NumField() {
-		panic("columns length is less than struct length")
-	}
-
-	for i := 0; i < t.NumField(); i++ {
-		tf := t.Field(i)
-		vf := v.Field(i)
-
-		fieldName := tf.Name
-		// fmt.Printf("%#v %v \n", vf.Addr(), vf.Addr())
-		for ii := range columns {
-			if strings.ToLower(columns[ii]) == strings.ToLower(fieldName) && vf.CanAddr() {
-				// fmt.Println(vf.Addr())
-				scanArgs[ii] = vf.Addr()
-
-				// fmt.Printf("%#v %v %d \n", scanArgs[ii], scanArgs[ii], ii)
-			}
-		}
-	}
-	// fmt.Println(scanArgs, 111, ops)
-
-	for rows.Next() {
-		err = rows.Scan(scanArgs...)
-		if err != nil {
-			panic(err.Error()) // proper error handling instead of panic in your app
-		}
-
-		ops = append(ops, *op)
-	}
-
-	fmt.Println(ops)
+	test()
 }
 
 func test() {
