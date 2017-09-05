@@ -8,6 +8,7 @@ import (
 
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"reflect"
 )
 
 func ExampleScrape() {
@@ -26,17 +27,46 @@ func ExampleScrape() {
 }
 
 type OnePiecePic struct {
-	Id          int
-	Group_id    int
+	Id          string `akke`
+	Group_id    string
 	Name        string
 	Path        string
-	Create_time int
-	Is_delete   int
+	Create_time string
+	Is_delete   string
 }
+
+type data map[string]interface{}
 
 func main() {
 	// ExampleScrape()
+	var op OnePiecePic
+	t := reflect.TypeOf(&op)
+	v := reflect.ValueOf(&op).Elem()
 
+	fmt.Println(t)
+
+	t = t.Elem()
+	fmt.Println(t)
+
+	v.NumField()
+
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		fmt.Println(f.Name, f.Type, f.Tag, f.PkgPath, f.Anonymous)
+	}
+
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+
+		if f.CanSet() {
+			f.SetString("sssss")
+		}
+	}
+
+	fmt.Println(op)
+}
+
+func test() {
 	db, err := sql.Open("mysql", "admin:Dream1tPossible@tcp(114.215.154.110:3306)/first-go?charset=utf8")
 
 	defer db.Close()
@@ -80,46 +110,4 @@ func main() {
 	}
 
 	fmt.Println(scanArgs, ops)
-}
-
-func test() {
-	// var op OnePiecePic
-	// ops := make([]OnePiecePic, 0)
-	// // panic(1)
-
-	// // Fetch rows
-	// for rows.Next() {
-	// 	// get RawBytes from data
-	// 	err = rows.Scan(scanArgs...)
-	// 	if err != nil {
-	// 		panic(err.Error()) // proper error handling instead of panic in your app
-	// 	}
-
-	// 	// Now do something with the data.
-	// 	// Here we just print each column as a string.
-	// 	var value string
-	// 	for i, col := range values {
-	// 		// Here we can check if the value is nil (NULL value)
-	// 		if col == nil {
-	// 			value = "NULL"
-	// 		} else {
-	// 			value = string(col)
-	// 		}
-	// 		fmt.Println(columns[i], ": ", value)
-
-	// 	}
-	// 	op.Id = string(values[0])
-	// 	op.Group_id = string(values[1])
-	// 	op.Name = string(values[2])
-	// 	op.Path = string(values[3])
-	// 	op.Create_time = string(values[4])
-	// 	op.Is_delete = string(values[5])
-
-	// 	ops = append(ops, op)
-
-	// 	fmt.Println("-----------------------------------")
-	// }
-
-	// fmt.Println(values[0], op)
-	// fmt.Println(ops)
 }
