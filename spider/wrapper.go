@@ -52,3 +52,24 @@ func (s *Spider) GetAttr(rule, attr string) ([]string, error) {
 	wg.Wait()
 	return res, nil
 }
+
+// 获取爬到的HTML的属性
+func (s *Spider) GetAttrs(rule, attr string) ([]string, error) {
+	var (
+		res = make([]string, 0)
+	)
+
+	s.doc.Find(rule).Each(func(i int, sl *goquery.Selection) {
+		attr, ok := sl.Attr(attr)
+
+		if ok {
+			res = append(res, attr)
+		}
+	})
+
+	return res, nil
+}
+
+func (s *Spider) GetJsonData() {
+
+}
