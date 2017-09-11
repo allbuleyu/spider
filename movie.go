@@ -8,6 +8,12 @@ import (
 	"github.com/astaxie/beego/logs"
 	"io/ioutil"
 	"net/http"
+
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
+
+	// "strconv"
+	"time"
 )
 
 const (
@@ -25,6 +31,7 @@ type Sub struct {
 }
 
 type Movie struct {
+	Id     string
 	Rate   string
 	Title  string
 	Url    string
@@ -33,6 +40,13 @@ type Movie struct {
 }
 
 func main() {
+	ctime := time.Now()
+	time.Sleep(2)
+	fmt.Println(ctime.Unix())
+	logs.Error("test")
+}
+
+func MovieMain() {
 	flag.Parse()
 	url := *startPage
 	req, err := http.NewRequest("GET", url, nil)
@@ -55,9 +69,43 @@ func main() {
 
 	body, err := ioutil.ReadAll(resp.Body)
 
-	movie := new(Sub)
+	movies := new(Sub)
 
-	json.Unmarshal(body, movie)
+	json.Unmarshal(body, movies)
 
-	fmt.Println(movie)
+	if len(movies.Subjects) == 0 {
+		logs.Error("done")
+	}
+
+	db, err := sql.Open("mysql", "admin:Dream1tPossible@tcp(114.215.154.110:3306)/first-go?charset=utf8")
+
+	defer db.Close()
+
+	var q string = ""
+	for _, movie := range movies.Subjects {
+		is_new := BooleToInt(movie.Is_new)
+
+		// db_id, _ := strconv.ParseInt(movie.Id, 10, 0)
+		// rate, _ := strconv.ParseFloat(movie.Rate, 0)
+		// q = fmt.Sprintf("insert into movie (rate, name, db_id, is_new, cover, url) VALUES (%f, '%s', %d, %d, '%s', '%s')", rate, movie.Title, db_id, is_new, movie.Cover, movie.Url)
+
+		q = fmt.Sprintf("insert into movie (rate, name, db_id, is_new, cover, url) VALUES (?, ?, ?, ?, ?, ?)")
+		res, err := db.Exec(q, movie.Rate, movie.Title, movie.Id, is_new, movie.Cover, movie.Url)
+
+		if err != nil {
+			logs.Error(err)
+			continue
+		}
+
+		fmt.Println(res.LastInsertId())
+		fmt.Println("---------------------")
+	}
+}
+
+func BooleToInt(b bool) int {
+	if b {
+		return 1
+	}
+
+	return 0
 }
