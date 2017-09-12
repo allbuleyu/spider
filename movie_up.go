@@ -1,9 +1,9 @@
 package main
 
 import (
-	"flag"
+	// "flag"
 	"fmt"
-	// "github.com/allbuleyu/spider/spider"
+
 	"encoding/json"
 	"github.com/astaxie/beego/logs"
 	"io/ioutil"
@@ -11,7 +11,9 @@ import (
 
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	// "strconv"
+
+	"sync"
+
 	"time"
 )
 
@@ -22,7 +24,9 @@ const (
 
 var (
 	// 这个地址是个ajax页面,返回json数组
-	startPage = flag.String("s", "https://movie.douban.com/j/search_subjects?type=movie&tag=豆瓣高分&sort=recommend&page_limit=20&page_start=0", "douban group start page")
+	// startPage = flag.String("s", "https://movie.douban.com/j/search_subjects?type=movie&tag=豆瓣高分&sort=recommend&page_limit=20&page_start=0", "douban group start page")
+
+	startPage = "https://movie.douban.com/j/search_subjects?type=movie&tag=日本&sort=recommend&page_limit=20&page_start=%d"
 )
 
 type Sub struct {
@@ -39,18 +43,30 @@ type Movie struct {
 }
 
 func main() {
-	// ctime := time.Now()
-	// time.Sleep(2)
-	// fmt.Println(ctime.Unix())
-	// logs.Error("test")
-	MovieMain()
-}
-
-func MovieMain() {
 	startTime := time.Now()
 
-	flag.Parse()
-	url := *startPage
+	i := 0
+	for {
+		url := fmt.Sprintf(startPage, i*20)
+		isDone := MovieMain(url)
+
+		if isDone {
+			break
+		}
+
+		i++
+
+		time.Sleep(time.Second * 3)
+	}
+
+	elapsed := time.Since(startTime)
+
+	fmt.Println(elapsed)
+}
+
+func MovieMain(url string) bool {
+	startTime := time.Now()
+
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
@@ -67,6 +83,7 @@ func MovieMain() {
 	// resp, err := client.Do(req)
 	resp, err := client.Get(url)
 	defer resp.Body.Close()
+
 	if err != nil {
 		logs.Error(err)
 	}
@@ -78,35 +95,48 @@ func MovieMain() {
 	json.Unmarshal(body, movies)
 
 	if len(movies.Subjects) == 0 {
-		logs.Info("done")
+		return true
 	}
 
 	db, err := sql.Open("mysql", "admin:Dream1tPossible@tcp(114.215.154.110:3306)/first-go?charset=utf8")
 
 	defer db.Close()
 
-	var q string = ""
-	for k, movie := range movies.Subjects {
-		is_new := BooleToInt(movie.Is_new)
+	var wg sync.WaitGroup
 
+	var q string = ""
+	for _, m := range movies.Subjects {
+		wg.Add(1)
 		// db_id, _ := strconv.ParseInt(movie.Id, 10, 0)
 		// rate, _ := strconv.ParseFloat(movie.Rate, 0)
 		// q = fmt.Sprintf("insert into movie (rate, name, db_id, is_new, cover, url) VALUES (%f, '%s', %d, %d, '%s', '%s')", rate, movie.Title, db_id, is_new, movie.Cover, movie.Url)
 
-		q = fmt.Sprintf("insert into movie (rate, name, db_id, is_new, cover, url) VALUES (?, ?, ?, ?, ?, ?)")
-		res, err := db.Exec(q, movie.Rate, movie.Title, movie.Id, is_new, movie.Cover, movie.Url)
+		go func(movie Movie) {
+			defer wg.Done()
 
-		if err != nil {
-			logs.Error("this err is %s, %d", err, k)
-			continue
-		}
+			is_new := BooleToInt(movie.Is_new)
 
-		fmt.Println(res.LastInsertId())
-		fmt.Println("---------------------")
+			q = fmt.Sprintf("insert into movie (rate, name, db_id, is_new, cover, url, group_id) VALUES (?, ?, ?, ?, ?, ?, ?)")
+			res, err := db.Exec(q, movie.Rate, movie.Title, movie.Id, is_new, movie.Cover, movie.Url, 5)
+
+			if err != nil {
+				logs.Error("this err is %s", err)
+			}
+
+			if err == nil {
+				fmt.Println(res.LastInsertId())
+				fmt.Println("---------------------")
+			}
+		}(m)
+
 	}
 
+	wg.Wait()
 	elapsed := time.Since(startTime)
+
 	logs.Info("run time is %s \n\n\n\n", elapsed)
+
+	return false
 }
 
 func BooleToInt(b bool) int {

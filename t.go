@@ -6,6 +6,8 @@ import (
 	"github.com/allbuleyu/spider/spider"
 	"github.com/astaxie/beego/logs"
 	"net/http"
+
+	"runtime"
 )
 
 const (
@@ -18,6 +20,10 @@ var (
 )
 
 func main() {
+	fmt.Println(runtime.NumCPU(), runtime.NumCgoCall())
+}
+
+func t() {
 	flag.Parse()
 	url := *startPage
 
