@@ -19,8 +19,51 @@ var (
 	startPage = flag.String("s", "http://www.douban.com/group/haixiuzu/discussion", "douban group start page")
 )
 
+type container int
+
+type containers struct {
+	container
+	Len int
+}
+
+func (c *containers) Iter() <-chan container {
+	item := make(chan container)
+
+	go func() {
+		for i := 0; i < c.Len; i++ {
+			item <- c.container
+			// item = <-c.container  invalid operation: <-c.container (receive from non-chan type container)
+		}
+	}()
+
+	return item
+}
+
+func watchChanRes() <-chan int {
+	ch := make(chan int)
+	go func() {
+		ch <- 123
+	}()
+
+	return ch
+}
+
 func main() {
 	fmt.Println(runtime.NumCPU(), runtime.NumCgoCall())
+	c := new(containers)
+
+	var con container = 1
+
+	c.Len = 10
+
+	for i := 0; i < 10; i++ {
+		c.container = con
+	}
+
+	for i := 0; i < 10; i++ {
+		fmt.Println(<-c.Iter())
+	}
+	// fmt.Println(<-watchChanRes())
 }
 
 func t() {
